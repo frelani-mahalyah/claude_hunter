@@ -1,14 +1,15 @@
-name: Claude Referral Hunter Bot
+name: Claude Referral Hunter
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    # Restart otomatis setiap 6 jam (setelah sesi 5.5 jam selesai, ada jeda 30 menit)
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
-  run-bot:
+  hunt:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 350   # 5h 50m — lebih dari cukup untuk 5.5 jam sesi
     permissions:
       contents: write
 
@@ -22,13 +23,22 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install python-telegram-bot>=21.0 curl_cffi>=0.7.0 aiohttp>=3.9.0 beautifulsoup4>=4.12.0 lxml>=5.0.0
+        run: pip install "python-telegram-bot>=21.0" "aiohttp>=3.9.0" "beautifulsoup4>=4.12.0" "lxml>=5.0.0"
 
-      - name: Run Claude Hunter Bot
+      - name: Run Claude Referral Hunter
         run: python main.py
         env:
           PYTHONUTF8: "1"
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           DEFAULT_CHAT_ID: ${{ secrets.DEFAULT_CHAT_ID }}
-          TWITTER_AUTH_TOKEN: ${{ secrets.TWITTER_AUTH_TOKEN }}
-          TWITTER_CT0: ${{ secrets.TWITTER_CT0 }}
+          MAX_RUNTIME: "19800"   # 5.5 jam dalam detik
+
+      - name: Commit updated database
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add claude_referrals.db 2>/dev/null || true
+          git diff --staged --quiet || (git commit -m "DB update $(date '+%Y-%m-%d %H:%M')" && git push) || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

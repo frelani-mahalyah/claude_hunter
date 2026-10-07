@@ -9,10 +9,10 @@ if sys.platform == "win32":
         pass
 
 # 1. TELEGRAM BOT SETTINGS
-# Token bot Telegram pengguna (@Pratamatoken_bot)
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8686085143:AAG2c6gHtnIQUzuz9HN6L274Zz-sT6UmGzo")
+# Menggunakan @yokgas_bot yang sama dengan Gemini scanner
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8706782960:AAFFxuOs0HoNyVpaPI56Qj42C6e4nUOEPpY")
 
-# ID Chat / Admin penerima notifikasi utama
+# ID Chat penerima notifikasi (Hendra Setyawan)
 DEFAULT_CHAT_ID = int(os.getenv("DEFAULT_CHAT_ID", "8403291265"))
 
 # 2. INTERVAL POLLING (DETIK) - Dioptimasi khusus untuk Claude
