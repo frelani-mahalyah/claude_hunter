@@ -8,22 +8,33 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-# 1. TELEGRAM BOT SETTINGS
-# Menggunakan @yokgas_bot yang sama dengan Gemini scanner
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8706782960:AAFFxuOs0HoNyVpaPI56Qj42C6e4nUOEPpY")
+# Load local .env jika ada
+env_file = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(env_file):
+    try:
+        with open(env_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    if k.strip() not in os.environ:
+                        os.environ[k.strip()] = v.strip()
+    except Exception:
+        pass
 
-# ID Chat penerima notifikasi (Hendra Setyawan)
+# 1. TELEGRAM BOT SETTINGS
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 DEFAULT_CHAT_ID = int(os.getenv("DEFAULT_CHAT_ID") or "8403291265")
 
-# 2. INTERVAL POLLING (DETIK) - Dioptimasi khusus untuk Claude
-INTERVAL_REDDIT = 10       # Cek Reddit posts & comments
-INTERVAL_TELEGRAM = 12     # Cek Channel Telegram publik
-INTERVAL_TWITTER = 10      # Cek X/Twitter Live Search (Dedicated Claude query)
-INTERVAL_HACKERNEWS = 15   # Cek HackerNews Algolia
-INTERVAL_GITHUB = 20       # Cek GitHub issues & repo
-INTERVAL_CLAUDECOUPONS = 20 # Cek Instafill repo & claudecoupons.com
+# 2. INTERVAL POLLING (DETIK)
+INTERVAL_REDDIT = 10
+INTERVAL_TELEGRAM = 12
+INTERVAL_TWITTER = 10
+INTERVAL_HACKERNEWS = 15
+INTERVAL_GITHUB = 20
+INTERVAL_CLAUDECOUPONS = 20
 
-# 3. DAFTAR SUBREDDIT KHUSUS CLAUDE (REDDIT)
+# 3. DAFTAR SUBREDDIT KHUSUS CLAUDE
 MONITORED_SUBREDDITS = [
     "ClaudeAI",
     "ClaudeCode",
@@ -32,7 +43,7 @@ MONITORED_SUBREDDITS = [
     "Freebies"
 ]
 
-# 4. DAFTAR CHANNEL TELEGRAM PUBLIK KHUSUS CLAUDE
+# 4. DAFTAR CHANNEL TELEGRAM PUBLIK
 DEFAULT_TELEGRAM_CHANNELS = [
     "claudereferral",
     "claudeprofree",
@@ -42,12 +53,12 @@ DEFAULT_TELEGRAM_CHANNELS = [
 ]
 
 # 5. X / TWITTER CREDENTIALS
-TWITTER_AUTH_TOKEN = os.getenv("TWITTER_AUTH_TOKEN", "f41a55d2ef5847c3e80cbd472f117e4caad1d135")
-TWITTER_CT0 = os.getenv("TWITTER_CT0", "2c0026179c994cd34cfb129abbd63d6d2078c8082269b62b9d771413fc9ad287a36aa620d34d4ec9239e7b3ca102e599a951c51d2ee156026bb082ca612cce048ebefa23e05d739e922d26e7a86d0b64")
+TWITTER_AUTH_TOKEN = os.getenv("TWITTER_AUTH_TOKEN", "")
+TWITTER_CT0 = os.getenv("TWITTER_CT0", "")
 TWITTER_USERNAME = os.getenv("TWITTER_USERNAME", "")
 TWITTER_PASSWORD = os.getenv("TWITTER_PASSWORD", "")
 
-# 6. TARGET AI REFERRAL - FOKUS EKSKLUSIF CLAUDE PRO
+# 6. TARGET AI REFERRAL
 AI_TARGETS = {
     "Claude": {
         "pattern": r"https?://(?:www\.)?claude\.ai/referral/([a-zA-Z0-9_-]+)",
@@ -58,5 +69,4 @@ AI_TARGETS = {
     }
 }
 
-# Pola regex gabungan untuk scanning cepat
 REFERRAL_REGEX = r"https?://(?:www\.)?claude\.ai/referral/([a-zA-Z0-9_-]+)"
