@@ -305,7 +305,7 @@ async def auto_relay_watcher(app: Application):
     await asyncio.sleep(max_runtime)
 
     print("[RELAY] Batas runtime sesi tercapai. Memulai auto-relay ke GitHub Actions berikutnya...")
-    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_PAT")
+    gh_token = os.environ.get("GH_PAT") or os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPOSITORY", "frelani-mahalyah/claude_hunter")
 
     if gh_token:
