@@ -18,7 +18,7 @@ class HunterDatabase:
     def init_db(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            # Table 1: Link Referral yang ditemukan
+            # Table 1: Link Referral yang ditemukan (Claude & AI lainnya)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS referrals (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,11 +28,22 @@ class HunterDatabase:
                     author TEXT,
                     raw_content TEXT,
                     discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    notified INTEGER DEFAULT 1
+                    notified INTEGER DEFAULT 1,
+                    target_name TEXT DEFAULT 'Claude'
                 )
             """)
 
-            # Table 2: Daftar Channel Telegram Publik yang dipantau
+            # Table 2: Link Google Gemini Pro 18 Bulan dari panel Jio
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS gemini_links (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT UNIQUE NOT NULL,
+                    mobile_ending TEXT,
+                    discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # Table 3: Daftar Channel Telegram Publik yang dipantau
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS monitored_channels (
                     channel_name TEXT PRIMARY KEY,
@@ -40,7 +51,7 @@ class HunterDatabase:
                 )
             """)
 
-            # Table 3: Daftar Penerima Notifikasi (Chat ID Telegram)
+            # Table 4: Daftar Penerima Notifikasi Publik (Chat ID Telegram)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS subscribers (
                     chat_id INTEGER PRIMARY KEY,
@@ -49,7 +60,7 @@ class HunterDatabase:
                 )
             """)
 
-            # Migrasi: Tambahkan kolom target_name jika belum ada
+            # Migrasi aman jika kolom belum ada
             try:
                 cursor.execute("ALTER TABLE referrals ADD COLUMN target_name TEXT DEFAULT 'Claude'")
             except Exception:
@@ -71,36 +82,77 @@ class HunterDatabase:
         if self.is_link_seen(clean_code):
             return False
 
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self.get_connection() as conn:
             cursor = conn.cursor()
             try:
                 cursor.execute("""
                     INSERT INTO referrals (code, url, source, author, raw_content, discovered_at, target_name)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (clean_code, url, source, author, raw_content[:500], datetime.now(), target_name))
+                """, (clean_code, url, source, author, raw_content[:500], now_str, target_name))
                 conn.commit()
                 return True
             except sqlite3.IntegrityError:
                 return False
 
     def get_recent_referrals(self, limit: int = 5) -> List[Dict]:
-        """Ambil referral terbaru yang berhasil ditangkap."""
+        """Ambil 5 referral terbaru yang berhasil ditangkap (urut dari terbaru)."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT code, url, source, author, discovered_at, COALESCE(target_name, 'Claude') as target_name
+                SELECT id, code, url, source, author, discovered_at, COALESCE(target_name, 'Claude') as target_name
                 FROM referrals 
                 ORDER BY id DESC LIMIT ?
             """, (limit,))
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
 
+    # --- Manajemen Link Google Gemini Pro 18 Bulan ---
+    def is_gemini_seen(self, url: str) -> bool:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM gemini_links WHERE url = ?", (url.strip(),))
+            return cursor.fetchone() is not None
+
+    def save_gemini_link(self, url: str, mobile_ending: str = "") -> bool:
+        if not url:
+            return False
+        clean_url = url.strip()
+        if self.is_gemini_seen(clean_url):
+            return False
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    INSERT INTO gemini_links (url, mobile_ending, discovered_at)
+                    VALUES (?, ?, ?)
+                """, (clean_url, mobile_ending, now_str))
+                conn.commit()
+                return True
+            except sqlite3.IntegrityError:
+                return False
+
+    def get_recent_gemini_links(self, limit: int = 5) -> List[Dict]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, url, mobile_ending, discovered_at
+                FROM gemini_links
+                ORDER BY id DESC LIMIT ?
+            """, (limit,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+
     def get_stats(self) -> Dict:
-        """Ambil ringkasan statistik scraper."""
+        """Ambil ringkasan statistik scraper Claude & Gemini."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) as total FROM referrals")
-            total = cursor.fetchone()["total"]
+            total_claude = cursor.fetchone()["total"]
+
+            cursor.execute("SELECT COUNT(*) as total FROM gemini_links")
+            total_gemini = cursor.fetchone()["total"]
 
             cursor.execute("""
                 SELECT source, COUNT(*) as count 
@@ -113,7 +165,8 @@ class HunterDatabase:
             sub_count = cursor.fetchone()["sub_count"]
 
             return {
-                "total_referrals": total,
+                "total_referrals": total_claude,
+                "total_gemini": total_gemini,
                 "by_source": by_source,
                 "active_subscribers": sub_count
             }
@@ -144,7 +197,7 @@ class HunterDatabase:
             cursor.execute("SELECT channel_name FROM monitored_channels ORDER BY channel_name ASC")
             return [row["channel_name"] for row in cursor.fetchall()]
 
-    # --- Manajemen Subscriber ---
+    # --- Manajemen Subscriber Publik ---
     def add_subscriber(self, chat_id: int) -> bool:
         with self.get_connection() as conn:
             cursor = conn.cursor()

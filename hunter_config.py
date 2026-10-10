@@ -13,7 +13,7 @@ if sys.platform == "win32":
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8706782960:AAFFxuOs0HoNyVpaPI56Qj42C6e4nUOEPpY")
 
 # ID Chat penerima notifikasi (Hendra Setyawan)
-DEFAULT_CHAT_ID = int(os.getenv("DEFAULT_CHAT_ID", "8403291265"))
+DEFAULT_CHAT_ID = int(os.getenv("DEFAULT_CHAT_ID") or "8403291265")
 
 # 2. INTERVAL POLLING (DETIK) - Dioptimasi khusus untuk Claude
 INTERVAL_REDDIT = 10       # Cek Reddit posts & comments
