@@ -28,6 +28,8 @@ from scrapers.telegram_worker import TelegramChannelWorker
 from scrapers.hn_worker import HackerNewsWorker
 from scrapers.github_worker import GitHubWorker
 from scrapers.claudecoupons_worker import ClaudeCouponsWorker
+from scrapers.wayback_worker import WaybackWorker
+from scrapers.note_worker import NoteWorker
 from scrapers.gemini_worker import GeminiWorker
 
 if sys.platform == "win32":
@@ -70,7 +72,7 @@ def format_history_text(limit: int = 5) -> tuple[str, InlineKeyboardMarkup]:
             "🕒 <b>REKAPAN LINK REFERRAL CLAUDE PRO</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "Belum ada link Claude yang tersimpan di sesi database ini.\n"
-            "Scraper sedang memantau secara live di Reddit, Telegram, GitHub, HN, & ClaudeCoupons 24/7.\n"
+            "Scraper sedang memantau secara live di Reddit, Telegram, GitHub, HN, ClaudeCoupons, Wayback Machine, & note.com 24/7.\n"
             "Begitu link pertama muncul, bot akan langsung kirim ke sini!",
             InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Refresh History", callback_data="btn_history_claude")]])
         )
@@ -160,7 +162,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📢 <b>Apa yang akan kamu dapatkan di sini?</b>\n"
         "1. 🎁 <b>Claude Pro 7-Day Free Guest Pass</b>\n"
         "   • Trial resmi Claude Pro dari Anthropic (<code>claude.ai/referral/...</code>)\n"
-        "   • Dipantau real-time dari 5 sumber (Reddit, Telegram, GitHub, HN, ClaudeCoupons)\n\n"
+        "   • Dipantau real-time dari 7 sumber (Reddit, Telegram, GitHub, HN, ClaudeCoupons, Wayback Machine, note.com)\n\n"
         "2. 💎 <b>Google Gemini Pro 18 Bulan</b>\n"
         "   • Hasil tembus scan 15 panel Jio & forwarder SMS India\n\n"
         "✅ <b>Status Kamu:</b> <code>Aktif Terdaftar Sebagai Penerima Notifikasi</code>\n"
@@ -204,8 +206,8 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🎯 <b>Total Link Claude Ditemukan:</b> {stats['total_referrals']} link\n"
         f"💎 <b>Total Link Gemini Ditemukan:</b> {stats.get('total_gemini', 0)} link\n\n"
         f"<b>Rincian Sumber Claude:</b>\n{sources_str}\n\n"
-        "🟢 <b>Status Sistem:</b> 6 Mesin Scraper Aktif 24/7 Non-Stop\n"
-        "<i>(Reddit, Telegram, HackerNews, GitHub, ClaudeCoupons, dan Jio Gemini Panels)</i>"
+        "🟢 <b>Status Sistem:</b> 8 Mesin Scraper Aktif 24/7 Non-Stop\n"
+        "<i>(Reddit, Telegram, HackerNews, GitHub, ClaudeCoupons, Wayback Machine, note.com, dan Jio Gemini Panels)</i>"
     )
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
 
@@ -257,7 +259,7 @@ async def on_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🎯 <b>Total Link Claude:</b> {stats['total_referrals']} link\n"
             f"💎 <b>Total Link Gemini:</b> {stats.get('total_gemini', 0)} link\n\n"
             f"<b>Rincian Sumber Claude:</b>\n{sources_str}\n\n"
-            "🟢 <b>Status:</b> Seluruh 6 Scraper Aktif 24 Jam Non-Stop"
+            "🟢 <b>Status:</b> Seluruh 8 Scraper Aktif 24 Jam Non-Stop"
         )
         try:
             await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
@@ -329,12 +331,14 @@ async def start_workers(app: Application):
         db.add_subscriber(DEFAULT_CHAT_ID)
         print(f"[INIT] Admin ID {DEFAULT_CHAT_ID} terdaftar.")
 
-    # Inisialisasi 6 worker (5 Claude + 1 Gemini)
+    # Inisialisasi 8 worker (7 Claude + 1 Gemini)
     workers.append(RedditWorker(bot))
     workers.append(TelegramChannelWorker(bot))
     workers.append(HackerNewsWorker(bot))
     workers.append(GitHubWorker(bot))
     workers.append(ClaudeCouponsWorker(bot))
+    workers.append(WaybackWorker(bot))
+    workers.append(NoteWorker(bot))
     workers.append(GeminiWorker(bot))
 
     # Jalankan semua worker sebagai task background
@@ -345,7 +349,7 @@ async def start_workers(app: Application):
     if os.environ.get("GITHUB_ACTIONS") == "true":
         asyncio.create_task(auto_relay_watcher(app))
 
-    print("[YOKGAS HUNTER READY] Seluruh 6 mesin pemantau (Claude & Gemini) aktif 24 Jam Non-Stop!")
+    print("[YOKGAS HUNTER READY] Seluruh 8 mesin pemantau (Claude & Gemini) aktif 24 Jam Non-Stop!")
 
 def main():
     if not TELEGRAM_BOT_TOKEN:
